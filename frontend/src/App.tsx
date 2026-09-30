@@ -37,10 +37,19 @@ export default function App() {
     <div className="app">
       <header>
         <strong className="brand" onClick={() => setOpenRequestId(null)}>
+          {/* Small geometric logo mark */}
+          <svg className="brand-logo" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+            <rect width="28" height="28" rx="6" fill="#2563eb" />
+            <rect x="7" y="7" width="6" height="6" rx="1.5" fill="white" />
+            <rect x="15" y="7" width="6" height="6" rx="1.5" fill="white" fillOpacity=".6" />
+            <rect x="7" y="15" width="6" height="6" rx="1.5" fill="white" fillOpacity=".6" />
+            <rect x="15" y="15" width="6" height="6" rx="1.5" fill="white" fillOpacity=".3" />
+          </svg>
           Dataset Request Desk
         </strong>
         <span className="who">
-          {user.name} · <span className="role">{user.role}</span>
+          <span className="who-name">{user.name}</span>
+          <span className={`role-pill role-${user.role}`}>{user.role}</span>
           <button className="link" onClick={logout}>
             Log out
           </button>

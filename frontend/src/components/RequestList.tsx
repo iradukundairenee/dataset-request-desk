@@ -49,7 +49,7 @@ export default function RequestList({ user, onOpen }: { user: User; onOpen: (id:
         {error && <p className="error">{error}</p>}
 
         {requests.length === 0 ? (
-          <p className="muted">No requests.</p>
+          <p className="empty-state">No requests.</p>
         ) : (
           <table>
             <thead>

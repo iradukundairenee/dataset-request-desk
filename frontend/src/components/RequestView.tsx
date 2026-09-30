@@ -86,6 +86,9 @@ export default function RequestView({ user, requestId, onBack }: Props) {
   const canEditEpisodes = !isClient && EDITABLE.includes(request.status);
   const enough = request.assigned_count >= request.episodes_requested;
 
+  // Progress bar: cap at 100 % visually even if over-assigned.
+  const progressPct = Math.min(100, Math.round((request.assigned_count / request.episodes_requested) * 100));
+
   return (
     <>
       <section className="card">
@@ -101,8 +104,18 @@ export default function RequestView({ user, requestId, onBack }: Props) {
 
         <dl className="facts">
           <dt>Episodes</dt>
-          <dd className={enough ? "" : "warn"}>
-            {request.assigned_count} assigned of {request.episodes_requested} requested
+          <dd>
+            <div className="progress-wrap">
+              <span className={enough ? "" : "warn"}>
+                {request.assigned_count} assigned of {request.episodes_requested} requested
+              </span>
+              <div className="progress-bar-track">
+                <div
+                  className={`progress-bar-fill${enough ? " complete" : ""}`}
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+            </div>
           </dd>
           <dt>Deadline</dt>
           <dd>{request.deadline}</dd>
@@ -140,20 +153,24 @@ export default function RequestView({ user, requestId, onBack }: Props) {
         )}
 
         <h3>History</h3>
-        <ol className="history">
+        <ul className="timeline">
           {request.events.map((e, i) => (
             <li key={i}>
-              {new Date(e.created_at).toLocaleString()}: {e.from_status ? `${e.from_status} → ` : "created as "}
-              {e.to_status} <span className="muted">by {e.actor_name}</span>
+              <span className="timeline-dot" />
+              <div className="timeline-body">
+                <time>{new Date(e.created_at).toLocaleString()}</time>
+                {e.from_status ? `${e.from_status} → ` : "created as "}
+                {e.to_status} <span className="muted">by {e.actor_name}</span>
+              </div>
             </li>
           ))}
-        </ol>
+        </ul>
       </section>
 
       <section className="card">
         <h3>Assigned episodes ({assigned.length})</h3>
         {assigned.length === 0 ? (
-          <p className="muted">None yet.</p>
+          <p className="empty-state">None yet.</p>
         ) : (
           <table>
             <thead>

@@ -102,7 +102,7 @@ export default function EpisodePicker({ requestId, defaultTaskName, onAssigned, 
       </div>
 
       {page && page.items.length === 0 && (
-        <p className="muted">
+        <p className="empty-state">
           No episodes match these filters
           {taskName.trim() && <> (no {unassignedOnly ? "unassigned " : ""}episodes for task “{taskName.trim()}”)</>}.
           {taskName.trim() && (

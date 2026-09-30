@@ -29,20 +29,25 @@ export default function Login({ onLoggedIn }: { onLoggedIn: (user: User) => void
   }
 
   return (
-    <form className="login card" onSubmit={submit}>
-      <h1>Dataset Request Desk</h1>
-      <label>
-        Email
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
-      </label>
-      <label>
-        Password
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-      </label>
-      {error && <p className="error">{error}</p>}
-      <button type="submit" disabled={busy}>
-        {busy ? "Logging in…" : "Log in"}
-      </button>
-    </form>
+    <div className="login-wrap">
+      <form className="login" onSubmit={submit}>
+        <div className="login-header">
+          <h1>Dataset Request Desk</h1>
+          <p>Internal robotics data platform</p>
+        </div>
+        <label>
+          Email
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
+        </label>
+        <label>
+          Password
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        </label>
+        {error && <p className="error">{error}</p>}
+        <button type="submit" disabled={busy}>
+          {busy ? "Logging in…" : "Log in"}
+        </button>
+      </form>
+    </div>
   );
 }
