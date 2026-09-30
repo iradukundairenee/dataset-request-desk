@@ -134,8 +134,11 @@ def parse_row(fields, now):
 
 
 def fingerprint(row):
-    """The values that must match for two rows to count as the same episode."""
-    return tuple(row[field] for field in EXPECTED_HEADER)
+    """A 64-bit hash of the values that must match for two rows to count as the
+    same episode. Storing the hash instead of the values keeps pass 1 small
+    (one int per id). Only rows with the same episode_id are compared, so a
+    false "identical" needs a hash collision between those rows: ~1 in 10^19."""
+    return hash(tuple(row[field] for field in EXPECTED_HEADER))
 
 
 # --- reading the file -----------------------------------------------------------
