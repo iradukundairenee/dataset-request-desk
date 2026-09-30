@@ -1,25 +1,7 @@
 import json
-import logging
 
-import pytest
 from fastapi import Request
 from fastapi.testclient import TestClient
-
-
-@pytest.fixture
-def log_lines():
-    """Capture the JSON lines written by the request logger."""
-    lines = []
-
-    class ListHandler(logging.Handler):
-        def emit(self, record):
-            lines.append(json.loads(record.getMessage()))
-
-    handler = ListHandler()
-    logger = logging.getLogger("app.request")
-    logger.addHandler(handler)
-    yield lines
-    logger.removeHandler(handler)
 
 
 def test_one_json_log_line_per_request(client, log_lines):

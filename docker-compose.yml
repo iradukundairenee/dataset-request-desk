@@ -34,6 +34,8 @@ services:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-desk}:${POSTGRES_PASSWORD:-desk}@db:5432/${POSTGRES_DB:-desk}
       TEST_DATABASE_URL: postgresql+psycopg://test:test@db_test:5432/test
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # Dev-only default so `docker compose up` works from a clean clone. Set a real secret in .env for any shared deployment.
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-0123456789abcdef}
     ports:
       - "${API_PORT:-8000}:8000"
     volumes:

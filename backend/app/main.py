@@ -5,8 +5,9 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import settings
+from app.errors import DomainError
 from app.logging_mw import request_logging_middleware, setup_logging
-from app.routers import health
+from app.routers import auth, health, users
 
 ERROR_CODES = {
     400: "bad_request",
@@ -42,6 +43,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     return error_response(422, "; ".join(parts))
 
 
+async def domain_error_handler(request: Request, exc: DomainError):
+    return error_response(exc.status_code, exc.message)
+
+
 def create_app():
     setup_logging(settings.log_level)
 
@@ -49,8 +54,11 @@ def create_app():
     app.middleware("http")(request_logging_middleware)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    app.add_exception_handler(DomainError, domain_error_handler)
 
     app.include_router(health.router)
+    app.include_router(auth.router)
+    app.include_router(users.router)
     return app
 
 
