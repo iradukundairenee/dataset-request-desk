@@ -98,10 +98,11 @@ automated frontend tests; the stretch item.
 
 ## 3. Something that went wrong
 
-To check that my concurrency test really protects the lock, I removed `FOR UPDATE` on purpose and ran
-the tests. I expected one failure. Instead the whole test run **hung** and never finished.
+While building with Claude Code, we checked that the concurrency test really protects the lock by
+removing `FOR UPDATE` on purpose and running the tests. We expected one failure. Instead the whole
+test run **hung** and never finished.
 
-The failed test gave me the clue: the assertion "unassign should be blocked" failed as expected, but
+The failed test gave us the clue: the assertion "unassign should be blocked" failed as expected, but
 after that nothing happened. The test opens one session that holds the row lock. When the assertion
 failed, the test stopped before it closed that session, so the lock was never released. After every
 test, a fixture empties the tables with `TRUNCATE`, and `TRUNCATE` waited for that lock forever.
@@ -110,9 +111,9 @@ The fix was a `try/finally` that always closes the locking session, even when th
 removing the lock gives a clean failure message instead of a hang.
 
 What I learned: a test is only useful if it **fails cleanly**. In CI, this bug would have looked like
-a stuck job with no error at all. Since then I test my tests by breaking the rule they protect and
-checking that the right test fails. That is also how I found that my analytics query grouped days in
-the database's timezone: the tests passed only because the test database runs in UTC. A new test sets
+a stuck job with no error at all. From then on we tested the tests by breaking the rule they protect
+and checking that the right test fails. That is also how we found that the analytics query grouped
+days in the database's timezone: the tests passed only because the test database runs in UTC. A new test sets
 the session to `Africa/Kigali`, and it fails without `AT TIME ZONE 'UTC'`.
 
 ## 4. Security
@@ -148,12 +149,12 @@ Measured on my laptop with 200,000 generated episodes:
 | Top 5 tasks by good episodes | 4 ms (index) | 27 ms (full scan) |
 
 Importing 200,000 rows takes about 14 s. The first version took 34 s; profiling showed parsing was
-only 2.4 s, so I changed the insert to SQLAlchemy's executemany form.
+only 2.4 s, so we changed the insert to SQLAlchemy's executemany form.
 
 **100× episodes (millions):** short analytics ranges stay fast because they use the `recorded_at`
 indexes. Long ranges grow with the rows scanned, about 3 s for a year at 5 million. I would add a daily
 summary table (day, robot, task, quality, count) updated by each import; episodes are append-only, so
-it is easy to keep correct. The importer's first pass keeps one entry per id: I cut it from 143 MB to
+it is easy to keep correct. The importer's first pass keeps one entry per id: we cut it from 143 MB to
 62 MB per 200k ids by storing a hash instead of the values, but at 5 million that is still about 1.5 GB.
 The next step is `COPY` into a staging table and doing the duplicate detection in SQL.
 
@@ -179,5 +180,5 @@ the UI, and drafted this NOTES.md from our work, which I then reviewed.
 
 How I checked the output: every domain rule has tests (178 in total, against a real Postgres), the
 important ones were "mutation-tested" by breaking the rule and confirming the right test fails, and I
-walked through the full flow in the browser with every role. I can explain each part of the code, and
-the decisions above are mine.
+walked through the full flow in the browser with every role. Many decisions started as suggestions
+from Claude Code; I approved each one and can explain it, and I can explain each part of the code.
