@@ -4,7 +4,7 @@ from datetime import date, datetime
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.auth import MAX_PASSWORD_BYTES
-from app.models import RequestStatus, Role
+from app.models import Quality, RequestStatus, Role
 
 
 class LoginIn(BaseModel):
@@ -95,3 +95,30 @@ class RequestDetail(RequestOut):
     """One request with its full status history (oldest first)."""
 
     events: list[StatusEventOut]
+
+
+class EpisodeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    episode_id: str
+    robot_id: str
+    task_name: str
+    recorded_at: datetime
+    duration_seconds: float
+    operator_name: str | None
+    quality: Quality
+    assigned_request_id: int | None
+
+
+class EpisodePage(BaseModel):
+    items: list[EpisodeOut]
+    total: int
+    limit: int
+    offset: int
+
+
+class AssignIn(BaseModel):
+    """Internal episode ids (EpisodeOut.id), not the EP-... codes."""
+
+    episode_ids: list[int] = Field(min_length=1, max_length=500)

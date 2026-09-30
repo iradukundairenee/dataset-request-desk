@@ -74,7 +74,7 @@ def list_requests(db, user, status=None):
     return requests
 
 
-def _get_visible(db, user, request_id, lock=False):
+def get_visible_request(db, user, request_id, lock=False):
     """Load a request the user is allowed to see. Another client's request is
     reported as not found (404), so clients can't probe which ids exist."""
     query = select(Request).where(Request.id == request_id)
@@ -87,7 +87,7 @@ def _get_visible(db, user, request_id, lock=False):
 
 
 def get_request(db, user, request_id):
-    request = _get_visible(db, user, request_id)
+    request = get_visible_request(db, user, request_id)
     request.assigned_count = _assigned_count(db, request.id)
     request.events = db.scalars(
         select(RequestStatusEvent)
@@ -100,7 +100,7 @@ def get_request(db, user, request_id):
 def transition(db, user, request_id, to_status):
     # Lock the row until commit: a concurrent transition or unassign on the same
     # request waits, so the "enough episodes assigned" check can't be raced.
-    request = _get_visible(db, user, request_id, lock=True)
+    request = get_visible_request(db, user, request_id, lock=True)
     from_status = request.status
 
     # 1. Role: who may move a request into this status at all?

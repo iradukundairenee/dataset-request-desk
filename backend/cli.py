@@ -2,6 +2,7 @@
 
     python -m cli seed-users [path]     (default: /seed/users.json)
     python -m cli import <path.csv>     import episodes; prints the report as JSON
+                    [--summary]         counts only, without the per-line issues list
 """
 import argparse
 import json
@@ -59,6 +60,7 @@ def main():
 
     import_cmd = commands.add_parser("import", help="import episodes from a CSV file (safe to re-run)")
     import_cmd.add_argument("path")
+    import_cmd.add_argument("--summary", action="store_true", help="print counts only, not every issue")
 
     args = parser.parse_args()
 
@@ -74,7 +76,11 @@ def main():
             except ImportFileError as error:
                 print(f"Import failed: {error.message}", file=sys.stderr)
                 sys.exit(1)
-        print(json.dumps(report, indent=2))
+        if args.summary:
+            report = {k: v for k, v in report.items() if k != "issues"}
+            print(json.dumps(report))
+        else:
+            print(json.dumps(report, indent=2))
 
 
 if __name__ == "__main__":

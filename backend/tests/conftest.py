@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import datetime, timezone
 
 import pytest
 from alembic import command
@@ -12,7 +13,7 @@ from app.auth import create_access_token, hash_password
 from app.config import settings
 from app.db import Base, get_db, make_engine
 from app.main import create_app
-from app.models import Role, User
+from app.models import Episode, Quality, Role, User
 
 test_engine = make_engine(settings.test_database_url)
 TestSession = sessionmaker(bind=test_engine, autoflush=False, expire_on_commit=False)
@@ -112,6 +113,23 @@ def client_a(make_user):
 @pytest.fixture
 def client_b(make_user):
     return make_user("client-b@example.com", Role.client)
+
+
+# --- episodes -----------------------------------------------------------------
+
+
+def add_episode(db, episode_id, quality=Quality.good, task_name="pick cup", robot_id="arm-01", day=1):
+    episode = Episode(
+        episode_id=episode_id,
+        robot_id=robot_id,
+        task_name=task_name,
+        recorded_at=datetime(2026, 8, day, 10, 0, tzinfo=timezone.utc),
+        duration_seconds=30,
+        quality=quality,
+    )
+    db.add(episode)
+    db.commit()
+    return episode
 
 
 # --- logs -------------------------------------------------------------------

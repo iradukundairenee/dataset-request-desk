@@ -1,18 +1,43 @@
 import os
 import tempfile
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 
 from app.auth import require_role
 from app.db import get_db
-from app.models import Role, User
+from app.models import Quality, Role, User
+from app.schemas import EpisodePage
+from app.services import episodes as episode_service
 from app.services import importer
 
 router = APIRouter(prefix="/episodes", tags=["episodes"])
 
 MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # 100 MB, roughly 1.5 million rows
+
+
+@router.get("", response_model=EpisodePage)
+def list_episodes(
+    task_name: str | None = None,
+    quality: Quality | None = None,
+    robot_id: str | None = None,
+    unassigned_only: bool = False,
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+    user: User = Depends(require_role(Role.operator, Role.admin)),
+):
+    items, total = episode_service.list_episodes(
+        db,
+        task_name=task_name,
+        quality=quality,
+        robot_id=robot_id,
+        unassigned_only=unassigned_only,
+        limit=limit,
+        offset=offset,
+    )
+    return EpisodePage(items=items, total=total, limit=limit, offset=offset)
 
 
 @router.post(
