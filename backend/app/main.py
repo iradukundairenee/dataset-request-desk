@@ -7,7 +7,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.config import settings
 from app.errors import DomainError
 from app.logging_mw import request_logging_middleware, setup_logging
-from app.routers import auth, health, requests, users
+from app.routers import auth, episodes, health, requests, users
 
 ERROR_CODES = {
     400: "bad_request",
@@ -16,6 +16,7 @@ ERROR_CODES = {
     404: "not_found",
     405: "method_not_allowed",
     409: "conflict",
+    413: "payload_too_large",
     422: "validation_error",
     503: "service_unavailable",
 }
@@ -60,6 +61,7 @@ def create_app():
     app.include_router(auth.router)
     app.include_router(users.router)
     app.include_router(requests.router)
+    app.include_router(episodes.router)
     return app
 
 
