@@ -50,6 +50,21 @@ export async function api<T>(path: string, options: { method?: string; body?: un
   return data as T;
 }
 
+// CSV import: the API takes the file as the raw request body (Content-Type: text/csv).
+export async function uploadCsv<T>(path: string, file: File): Promise<T> {
+  const response = await fetch(`/api${path}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${getToken()}`, "Content-Type": "text/csv" },
+    body: file,
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    if (response.status === 401) onUnauthorized();
+    throw new ApiError(response.status, data?.error?.message ?? `Upload failed (${response.status})`);
+  }
+  return data as T;
+}
+
 // Turn any thrown value into a message for the error bar.
 export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);

@@ -1,4 +1,17 @@
 import { useEffect, useState } from "react";
+import {
+  Alert,
+  App as AntApp,
+  Button,
+  Card,
+  Descriptions,
+  Progress,
+  Space,
+  Spin,
+  Table,
+  Timeline,
+  type TableColumnsType,
+} from "antd";
 import { api, errorMessage } from "../api";
 import type { Episode, RequestDetail, Status, User } from "../types";
 import EpisodePicker from "./EpisodePicker";
@@ -24,6 +37,7 @@ interface Props {
 }
 
 export default function RequestView({ user, requestId, onBack }: Props) {
+  const { modal } = AntApp.useApp();
   const [request, setRequest] = useState<RequestDetail | null>(null);
   const [assigned, setAssigned] = useState<Episode[]>([]);
   const [error, setError] = useState("");
@@ -63,8 +77,18 @@ export default function RequestView({ user, requestId, onBack }: Props) {
   }
 
   function move(to: Status) {
-    if (to === "rejected" && !window.confirm("Reject this delivery? The operators will rework it.")) return;
-    run(() => api(`/requests/${requestId}/transition`, { method: "POST", body: { to_status: to } }));
+    const doMove = () => run(() => api(`/requests/${requestId}/transition`, { method: "POST", body: { to_status: to } }));
+    if (to === "rejected") {
+      modal.confirm({
+        title: "Reject this delivery?",
+        content: "The operators will rework it and deliver again.",
+        okText: "Reject delivery",
+        okButtonProps: { danger: true },
+        onOk: doMove,
+      });
+    } else {
+      doMove();
+    }
   }
 
   function unassign(episodeId: number) {
@@ -73,145 +97,128 @@ export default function RequestView({ user, requestId, onBack }: Props) {
 
   if (!request) {
     return (
-      <section className="card">
-        <button className="link" onClick={onBack}>
-          ← Back
-        </button>
-        {error ? <p className="error">{error}</p> : <p className="muted">Loading…</p>}
-      </section>
+      <Card>
+        <Button type="link" onClick={onBack} className="back-link">
+          ← Back to requests
+        </Button>
+        {error ? <Alert type="error" title={error} showIcon /> : <Spin />}
+      </Card>
     );
   }
 
   const actions = ACTIONS.filter((a) => a.from === request.status && a.forClient === isClient);
   const canEditEpisodes = !isClient && EDITABLE.includes(request.status);
   const enough = request.assigned_count >= request.episodes_requested;
-
   // Progress bar: cap at 100 % visually even if over-assigned.
   const progressPct = Math.min(100, Math.round((request.assigned_count / request.episodes_requested) * 100));
 
+  const episodeColumns: TableColumnsType<Episode> = [
+    { title: "Episode", dataIndex: "episode_id" },
+    { title: "Robot", dataIndex: "robot_id" },
+    { title: "Task", dataIndex: "task_name" },
+    { title: "Quality", dataIndex: "quality" },
+    { title: "Recorded", dataIndex: "recorded_at", render: (v: string) => new Date(v).toLocaleString() },
+    ...(canEditEpisodes
+      ? [
+          {
+            title: "",
+            key: "unassign",
+            render: (_: unknown, e: Episode) => (
+              <Button type="link" danger onClick={() => unassign(e.id)} disabled={busy}>
+                Unassign
+              </Button>
+            ),
+          },
+        ]
+      : []),
+  ];
+
   return (
     <>
-      <section className="card">
-        <button className="link" onClick={onBack}>
-          ← All requests
-        </button>
-        <div className="row spread">
-          <h2>
-            Request #{request.id}: {request.task_name}
-          </h2>
-          <StatusBadge status={request.status} />
-        </div>
+      <Button type="link" onClick={onBack} className="back-link">
+        ← Back to requests
+      </Button>
 
-        <dl className="facts">
-          <dt>Episodes</dt>
-          <dd>
+      <Card
+        className="section"
+        title={<span className="request-title">{request.task_name}</span>}
+        extra={<StatusBadge status={request.status} />}
+      >
+        <Descriptions column={{ xs: 1, md: 2 }} className="section">
+          <Descriptions.Item label="Episodes">
             <div className="progress-wrap">
               <span className={enough ? "" : "warn"}>
                 {request.assigned_count} assigned of {request.episodes_requested} requested
               </span>
-              <div className="progress-bar-track">
-                <div
-                  className={`progress-bar-fill${enough ? " complete" : ""}`}
-                  style={{ width: `${progressPct}%` }}
-                />
-              </div>
+              <Progress
+                percent={progressPct}
+                size="small"
+                showInfo={false}
+                status={enough ? "success" : "active"}
+                className="progress"
+              />
             </div>
-          </dd>
-          <dt>Deadline</dt>
-          <dd>{request.deadline}</dd>
-          {!isClient && (
-            <>
-              <dt>Client</dt>
-              <dd>{request.client_name}</dd>
-            </>
-          )}
-          {request.notes && (
-            <>
-              <dt>Notes</dt>
-              <dd>{request.notes}</dd>
-            </>
-          )}
-        </dl>
+          </Descriptions.Item>
+          <Descriptions.Item label="Deadline">{request.deadline}</Descriptions.Item>
+          {!isClient && <Descriptions.Item label="Client">{request.client_name}</Descriptions.Item>}
+          {request.notes && <Descriptions.Item label="Notes">{request.notes}</Descriptions.Item>}
+        </Descriptions>
 
-        {error && <p className="error">{error}</p>}
+        {error && <Alert type="error" title={error} showIcon className="form-alert" />}
 
         {isClient && (request.status === "submitted" || request.status === "in_progress" || request.status === "rejected") && (
-          <p className="muted">
-            Our operators are preparing your episodes. You can accept or reject the delivery once it is marked
-            delivered.
-          </p>
+          <Alert
+            type="info"
+            showIcon
+            className="form-alert"
+            title="Our operators are preparing your episodes. You can accept or reject the delivery once it is marked delivered."
+          />
         )}
 
         {actions.length > 0 && (
-          <div className="row">
+          <Space className="section">
             {actions.map((a) => (
-              <button key={a.to} onClick={() => move(a.to)} disabled={busy} className={a.to === "rejected" ? "danger" : ""}>
+              <Button
+                key={a.to}
+                type="primary"
+                danger={a.to === "rejected"}
+                onClick={() => move(a.to)}
+                loading={busy}
+                size="large"
+              >
                 {a.label}
-              </button>
+              </Button>
             ))}
-          </div>
+          </Space>
         )}
 
-        <h3>History</h3>
-        <ul className="timeline">
-          {request.events.map((e, i) => (
-            <li key={i}>
-              <span className="timeline-dot" />
-              <div className="timeline-body">
-                <time>{new Date(e.created_at).toLocaleString()}</time>
+        <h3 className="section-label">History</h3>
+        <Timeline
+          className="timeline"
+          items={request.events.map((e) => ({
+            content: (
+              <div>
+                <div className="timeline-time">{new Date(e.created_at).toLocaleString()}</div>
                 {e.from_status ? `${e.from_status} → ` : "created as "}
                 {e.to_status} <span className="muted">by {e.actor_name}</span>
               </div>
-            </li>
-          ))}
-        </ul>
-      </section>
+            ),
+          }))}
+        />
+      </Card>
 
-      <section className="card">
-        <h3>Assigned episodes ({assigned.length})</h3>
-        {assigned.length === 0 ? (
-          <p className="empty-state">None yet.</p>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Episode</th>
-                <th>Robot</th>
-                <th>Task</th>
-                <th>Quality</th>
-                <th>Recorded</th>
-                {canEditEpisodes && <th></th>}
-              </tr>
-            </thead>
-            <tbody>
-              {assigned.map((e) => (
-                <tr key={e.id}>
-                  <td>{e.episode_id}</td>
-                  <td>{e.robot_id}</td>
-                  <td>{e.task_name}</td>
-                  <td>{e.quality}</td>
-                  <td>{new Date(e.recorded_at).toLocaleString()}</td>
-                  {canEditEpisodes && (
-                    <td>
-                      <button className="link" onClick={() => unassign(e.id)} disabled={busy}>
-                        Unassign
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+      <Card className="section" title={`Assigned episodes (${assigned.length})`}>
+        <Table
+          rowKey="id"
+          columns={episodeColumns}
+          dataSource={assigned}
+          pagination={{ pageSize: 10, hideOnSinglePage: true }}
+          locale={{ emptyText: "None yet." }}
+        />
+      </Card>
 
       {canEditEpisodes && (
-        <EpisodePicker
-          requestId={request.id}
-          defaultTaskName={request.task_name}
-          onAssigned={load}
-          onError={setError}
-        />
+        <EpisodePicker requestId={request.id} defaultTaskName={request.task_name} onAssigned={load} onError={setError} />
       )}
     </>
   );

@@ -1,11 +1,16 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
+import { Alert, AutoComplete, Button, Card, DatePicker, Form, Input, InputNumber, Typography } from "antd";
+import dayjs, { type Dayjs } from "dayjs";
 import { api, errorMessage } from "../api";
 
+interface FormValues {
+  task_name: string;
+  episodes_requested: number;
+  deadline: Dayjs;
+  notes?: string;
+}
+
 export default function NewRequestForm({ onCreated }: { onCreated: () => void }) {
-  const [taskName, setTaskName] = useState("");
-  const [count, setCount] = useState("");
-  const [deadline, setDeadline] = useState("");
-  const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [knownTasks, setKnownTasks] = useState<string[]>([]);
@@ -15,24 +20,19 @@ export default function NewRequestForm({ onCreated }: { onCreated: () => void })
     api<string[]>("/episodes/tasks").then(setKnownTasks).catch(() => setKnownTasks([]));
   }, []);
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
+  async function submit(values: FormValues) {
     setBusy(true);
     setError("");
     try {
       await api("/requests", {
         method: "POST",
         body: {
-          task_name: taskName,
-          episodes_requested: Number(count),
-          deadline,
-          notes: notes || null,
+          task_name: values.task_name,
+          episodes_requested: values.episodes_requested,
+          deadline: values.deadline.format("YYYY-MM-DD"),
+          notes: values.notes || null,
         },
       });
-      setTaskName("");
-      setCount("");
-      setDeadline("");
-      setNotes("");
       onCreated();
     } catch (e) {
       setError(errorMessage(e));
@@ -41,44 +41,44 @@ export default function NewRequestForm({ onCreated }: { onCreated: () => void })
     }
   }
 
-  const today = new Date().toISOString().slice(0, 10);
-
   return (
-    <form className="card" onSubmit={submit}>
-      <h2>New request</h2>
-      <div className="row">
-        <label>
-          Task
-          <input
-            value={taskName}
-            onChange={(e) => setTaskName(e.target.value)}
-            list="known-tasks"
+    <Card className="form-card">
+      <Typography.Title level={4} className="card-heading">
+        Describe the dataset you need
+      </Typography.Title>
+      <Typography.Paragraph type="secondary">
+        Pick a task from the suggestions so our operators can match it with recorded episodes. You can follow progress
+        under “My requests”.
+      </Typography.Paragraph>
+
+      <Form layout="vertical" size="large" onFinish={submit} requiredMark={false}>
+        <Form.Item label="Task" name="task_name" rules={[{ required: true, whitespace: true, message: "Enter a task" }]}>
+          <AutoComplete
             placeholder="pick cup"
-            required
+            options={knownTasks.map((t) => ({ value: t }))}
+            filterOption={(input, option) => (option?.value ?? "").toLowerCase().includes(input.toLowerCase())}
           />
-          <datalist id="known-tasks">
-            {knownTasks.map((t) => (
-              <option key={t} value={t} />
-            ))}
-          </datalist>
-        </label>
-        <label>
-          Episodes
-          <input type="number" min={1} value={count} onChange={(e) => setCount(e.target.value)} required />
-        </label>
-        <label>
-          Deadline
-          <input type="date" min={today} value={deadline} onChange={(e) => setDeadline(e.target.value)} required />
-        </label>
-      </div>
-      <label>
-        Notes
-        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
-      </label>
-      {error && <p className="error">{error}</p>}
-      <button type="submit" disabled={busy}>
-        {busy ? "Creating…" : "Create request"}
-      </button>
-    </form>
+        </Form.Item>
+        <div className="form-row">
+          <Form.Item label="Episodes" name="episodes_requested" rules={[{ required: true, message: "How many?" }]}>
+            <InputNumber min={1} max={1000000} style={{ width: "100%" }} />
+          </Form.Item>
+          <Form.Item label="Deadline" name="deadline" rules={[{ required: true, message: "Pick a date" }]}>
+            <DatePicker
+              style={{ width: "100%" }}
+              format="YYYY-MM-DD"
+              disabledDate={(d) => d.isBefore(dayjs(), "day")}
+            />
+          </Form.Item>
+        </div>
+        <Form.Item label="Notes" name="notes">
+          <Input.TextArea rows={3} maxLength={2000} />
+        </Form.Item>
+        {error && <Alert type="error" title={error} showIcon className="form-alert" />}
+        <Button type="primary" htmlType="submit" loading={busy}>
+          Create request
+        </Button>
+      </Form>
+    </Card>
   );
 }
