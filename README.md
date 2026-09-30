@@ -264,4 +264,4 @@ docs/WORK_TASK.md      the brief
 
 ## Stretch item
 
-None yet. <!-- update if you add one: real-time / background work / deployment -->
+None. I prioritised correctness, tests and the written notes (see NOTES.md, section 2).
