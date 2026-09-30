@@ -73,6 +73,7 @@ class StatusEventOut(BaseModel):
     from_status: RequestStatus | None
     to_status: RequestStatus
     actor_id: int
+    actor_name: str
     created_at: datetime
 
 
@@ -81,6 +82,7 @@ class RequestOut(BaseModel):
 
     id: int
     client_id: int
+    client_name: str
     task_name: str
     episodes_requested: int
     deadline: date

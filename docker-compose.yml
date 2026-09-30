@@ -53,5 +53,21 @@ services:
       timeout: 3s
       retries: 10
 
+  # The React app, served by nginx. nginx also forwards /api/* to the api service.
+  web:
+    build: ./frontend
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      # Checks nginx and its proxy to the API in one go. 127.0.0.1, not localhost:
+      # inside the container localhost resolves to IPv6 ::1 first, and nginx listens on IPv4.
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/api/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
 volumes:
   db_data:

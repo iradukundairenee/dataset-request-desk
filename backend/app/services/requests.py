@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from sqlalchemy import func, select
 
 from app.errors import Conflict, Forbidden, Invalid, NotFound
-from app.models import Assignment, Request, RequestStatus, RequestStatusEvent, Role
+from app.models import Assignment, Request, RequestStatus, RequestStatusEvent, Role, User
 from app.services.normalise import normalise_task_name
 
 S = RequestStatus
@@ -47,6 +47,7 @@ def create_request(db, client, task_name, episodes_requested, deadline, notes=No
     db.add(RequestStatusEvent(request_id=request.id, from_status=None, to_status=S.submitted, actor_id=client.id))
     db.commit()  # request and its creation event are saved together, or not at all
     request.assigned_count = 0
+    request.client_name = client.name
     return request
 
 
@@ -57,9 +58,10 @@ def _assigned_count(db, request_id):
 def list_requests(db, user, status=None):
     """Clients see only their own requests; operators and admins see all."""
     query = (
-        select(Request, func.count(Assignment.id))
+        select(Request, func.count(Assignment.id), User.name)
+        .join(User, User.id == Request.client_id)
         .outerjoin(Assignment, Assignment.request_id == Request.id)
-        .group_by(Request.id)
+        .group_by(Request.id, User.name)
         .order_by(Request.created_at.desc(), Request.id.desc())
     )
     if user.role == Role.client:
@@ -68,8 +70,9 @@ def list_requests(db, user, status=None):
         query = query.where(Request.status == status)
 
     requests = []
-    for request, assigned_count in db.execute(query).all():
+    for request, assigned_count, client_name in db.execute(query).all():
         request.assigned_count = assigned_count
+        request.client_name = client_name
         requests.append(request)
     return requests
 
@@ -89,11 +92,17 @@ def get_visible_request(db, user, request_id, lock=False):
 def get_request(db, user, request_id):
     request = get_visible_request(db, user, request_id)
     request.assigned_count = _assigned_count(db, request.id)
-    request.events = db.scalars(
-        select(RequestStatusEvent)
+    request.client_name = db.get(User, request.client_id).name
+    rows = db.execute(
+        select(RequestStatusEvent, User.name)
+        .join(User, User.id == RequestStatusEvent.actor_id)
         .where(RequestStatusEvent.request_id == request.id)
         .order_by(RequestStatusEvent.id)
     ).all()
+    request.events = []
+    for event, actor_name in rows:
+        event.actor_name = actor_name
+        request.events.append(event)
     return request
 
 

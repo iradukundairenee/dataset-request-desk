@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 
-from app.auth import require_role
+from app.auth import get_current_user, require_role
 from app.db import get_db
 from app.models import Quality, Role, User
 from app.schemas import EpisodePage
@@ -15,6 +15,12 @@ from app.services import importer
 router = APIRouter(prefix="/episodes", tags=["episodes"])
 
 MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # 100 MB, roughly 1.5 million rows
+
+
+@router.get("/tasks", response_model=list[str])
+def list_task_names(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """Known task names. Any logged-in user: clients use it to pick a task that exists."""
+    return episode_service.list_task_names(db)
 
 
 @router.get("", response_model=EpisodePage)

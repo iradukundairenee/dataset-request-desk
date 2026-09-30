@@ -26,3 +26,8 @@ def list_episodes(db, task_name=None, quality=None, robot_id=None, unassigned_on
         episode.assigned_request_id = request_id
         episodes.append(episode)
     return episodes, total
+
+
+def list_task_names(db):
+    """Distinct task names across all episodes, for the request form's suggestions."""
+    return db.scalars(select(Episode.task_name).distinct().order_by(Episode.task_name)).all()

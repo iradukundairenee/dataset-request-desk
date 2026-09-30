@@ -287,3 +287,18 @@ def test_full_lifecycle_with_rework_is_recorded_in_order(client, db, client_a, o
         (S.in_progress, S.delivered),
         (S.delivered, S.accepted),
     ]
+
+
+# --- names for the UI ---------------------------------------------------------
+
+
+def test_requests_carry_client_name_and_history_carries_actor_name(client, db, client_a, operator):
+    request = make_request(db, client_a)
+    move(client, operator, request.id, S.in_progress)
+
+    listed = client.get("/requests", headers=auth_header(operator)).json()
+    assert listed[0]["client_name"] == client_a.name
+
+    detail = client.get(f"/requests/{request.id}", headers=auth_header(operator)).json()
+    assert detail["client_name"] == client_a.name
+    assert detail["events"][-1]["actor_name"] == operator.name

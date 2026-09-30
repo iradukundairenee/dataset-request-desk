@@ -72,3 +72,18 @@ def test_limit_is_capped(client, operator):
 
 def test_clients_cannot_browse_episodes(client, client_a):
     assert get_episodes(client, client_a).status_code == 403
+
+
+def test_task_names_are_distinct_sorted_and_visible_to_clients(client, db, client_a):
+    add_episode(db, "EP-1", task_name="pick cup")
+    add_episode(db, "EP-2", task_name="fold towel")
+    add_episode(db, "EP-3", task_name="pick cup")
+
+    response = client.get("/episodes/tasks", headers=auth_header(client_a))
+
+    assert response.status_code == 200
+    assert response.json() == ["fold towel", "pick cup"]
+
+
+def test_task_names_need_login(client):
+    assert client.get("/episodes/tasks").status_code == 401
