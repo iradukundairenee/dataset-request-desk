@@ -46,6 +46,7 @@ Aim for 1–2 pages in total.
 
 ## 2. Deliberately left out / simplified, and the next two days
 
+- CI: workflow written (`.github/workflows/ci.yml`) but GitHub Actions is blocked on my account by a billing lock, so it has never run on GitHub; the same steps were run locally and pass
 - Left out: <!-- e.g. rejection reason, pagination on request list, token revocation/refresh, frontend tests, rate limiting on login, … -->
 - Simplified: <!-- e.g. startup import adds an import_runs row on every restart; client sees operators' names in history -->
 - Next two days: <!-- your priorities, e.g. daily summary table for analytics, COPY-based import, httpOnly cookie auth, … -->

@@ -74,6 +74,15 @@ CI (GitHub Actions, `.github/workflows/ci.yml`) builds both images, runs the
 tests, starts the whole stack with `docker compose up --wait` and smoke-tests
 it through the web app's proxy.
 
+> **CI note:** the workflow is ready, but GitHub Actions can't start on my
+> account because of an unrelated billing lock (the run shows "The job was not
+> started because your account is locked due to a billing issue"). The same
+> steps pass locally:
+>
+> ```bash
+> docker compose build && docker compose run --rm api pytest -q && docker compose up -d --wait
+> ```
+
 ---
 
 ## What each role can do
