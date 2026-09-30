@@ -7,7 +7,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.config import settings
 from app.errors import DomainError
 from app.logging_mw import request_logging_middleware, setup_logging
-from app.routers import auth, episodes, health, requests, users
+from app.routers import analytics, auth, episodes, health, requests, users
 
 ERROR_CODES = {
     400: "bad_request",
@@ -62,6 +62,7 @@ def create_app():
     app.include_router(users.router)
     app.include_router(requests.router)
     app.include_router(episodes.router)
+    app.include_router(analytics.router)
     return app
 
 
