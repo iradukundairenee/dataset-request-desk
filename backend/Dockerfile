@@ -12,6 +12,6 @@ COPY . .
 
 EXPOSE 8000
 
-# Apply migrations, then start the API. Uvicorn's access log is off because
+# Apply migrations, create seed users (idempotent), then start the API. Uvicorn's access log is off because
 # our own middleware writes one JSON line per request.
-CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --no-access-log"]
+CMD ["sh", "-c", "alembic upgrade head && python -m cli seed-users && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --no-access-log"]

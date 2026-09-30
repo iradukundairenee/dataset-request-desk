@@ -6,14 +6,20 @@ from sqlalchemy import engine_from_config, pool
 from app.config import settings
 from app.db import Base
 
-# Phase 2: import app.models here so autogenerate can see the tables.
+import app.models  # noqa: F401  (registers the tables on Base.metadata)
 
 config = context.config
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    # Keep loggers the app already set up (e.g. the JSON request logger in tests).
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
-# URL can be overridden with `-x url=...` (used by tests to migrate the test DB).
-url = context.get_x_argument(as_dictionary=True).get("url", settings.database_url)
+# URL priority: `-x url=...` on the command line, then a URL set in code
+# (the tests do this to migrate the test DB), then DATABASE_URL.
+url = (
+    context.get_x_argument(as_dictionary=True).get("url")
+    or config.get_main_option("sqlalchemy.url")
+    or settings.database_url
+)
 config.set_main_option("sqlalchemy.url", url.replace("%", "%%"))
 
 target_metadata = Base.metadata

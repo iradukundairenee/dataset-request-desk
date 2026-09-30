@@ -39,6 +39,7 @@ services:
     volumes:
       # Mount the code so `docker compose run --rm api pytest` sees edits without a rebuild.
       - ./backend:/app
+      - ./seed:/seed:ro
     depends_on:
       db:
         condition: service_healthy
