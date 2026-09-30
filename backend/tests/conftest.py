@@ -109,6 +109,11 @@ def client_a(make_user):
     return make_user("client-a@example.com", Role.client)
 
 
+@pytest.fixture
+def client_b(make_user):
+    return make_user("client-b@example.com", Role.client)
+
+
 # --- logs -------------------------------------------------------------------
 
 

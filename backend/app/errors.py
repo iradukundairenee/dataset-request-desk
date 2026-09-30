@@ -13,6 +13,12 @@ class DomainError(Exception):
         self.message = message
 
 
+class Invalid(DomainError):
+    """Input that is well-formed but breaks a business rule (e.g. a past deadline)."""
+
+    status_code = 422
+
+
 class NotFound(DomainError):
     status_code = 404
 

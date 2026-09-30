@@ -1,10 +1,10 @@
 """Request and response bodies (pydantic)."""
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.auth import MAX_PASSWORD_BYTES
-from app.models import Role
+from app.models import RequestStatus, Role
 
 
 class LoginIn(BaseModel):
@@ -52,3 +52,46 @@ class UserUpdate(BaseModel):
 
     role: Role | None = None
     is_active: bool | None = None
+
+
+class RequestCreate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    task_name: str = Field(min_length=1, max_length=200)
+    episodes_requested: int = Field(gt=0, le=1_000_000)
+    deadline: date
+    notes: str | None = Field(default=None, max_length=2000)
+
+
+class TransitionIn(BaseModel):
+    to_status: RequestStatus
+
+
+class StatusEventOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    from_status: RequestStatus | None
+    to_status: RequestStatus
+    actor_id: int
+    created_at: datetime
+
+
+class RequestOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    client_id: int
+    task_name: str
+    episodes_requested: int
+    deadline: date
+    notes: str | None
+    status: RequestStatus
+    assigned_count: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class RequestDetail(RequestOut):
+    """One request with its full status history (oldest first)."""
+
+    events: list[StatusEventOut]
